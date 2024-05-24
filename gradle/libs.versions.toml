@@ -1,0 +1,39 @@
+[versions]
+agp = "8.3.1"
+junit = "4.13.2"
+junitVersion = "1.1.5"
+espressoCore = "3.5.1"
+appcompat = "1.6.1"
+material = "1.12.0"
+activity = "1.8.0"
+constraintlayout = "2.1.4"
+cameraxVersion = "1.3.0-rc01"
+[libraries]
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+zxing = { group = "com.google.zxing", name = "core", version= "3.4.1" }
+camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "cameraxVersion" }
+camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraxVersion" }
+camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraxVersion" }
+camera-video = { group = "androidx.camera", name = "camera-video", version.ref = "cameraxVersion" }
+camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraxVersion" }
+camera-extensions = { group = "androidx.camera", name = "camera-extensions", version.ref = "cameraxVersion" }
+gms = { group = "com.google.android.gms", name = "play-services-vision", version = "20.1.3" }
+crop = { group = "com.theartofdev.edmodo", name = "android-image-cropper", version = "2.8.0" }
+scanner = { group = "com.journeyapps", name = "zxing-android-embedded", version = "4.3.0" }
+ai = { group = "com.quickbirdstudios", name = "opencv-contrib", version = "3.4.15" }
+#tensorflow = { group = "org.tensorflow", name = "tensorflow-lite-support", version = "0.4.1" }
+#ai = { group = "com.google.firebase", name = "firebase-ml-vision-object-detection-model", version = "22.0.3" }
+#kotlin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version = "$kotlin_version" }
+#gradle = { group = "com.android.tools.build", name = "gradle", version = "7.1.3" }
+
+
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+
