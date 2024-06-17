@@ -27,7 +27,7 @@ gms = { group = "com.google.android.gms", name = "play-services-vision", version
 crop = { group = "com.theartofdev.edmodo", name = "android-image-cropper", version = "2.8.0" }
 scanner = { group = "com.journeyapps", name = "zxing-android-embedded", version = "4.3.0" }
 ai = { group = "com.quickbirdstudios", name = "opencv-contrib", version = "3.4.15" }
-#tensorflow = { group = "org.tensorflow", name = "tensorflow-lite-support", version = "0.4.1" }
+tensorflow = { group = "org.tensorflow", name = "tensorflow-lite-support", version = "0.4.1" }
 #ai = { group = "com.google.firebase", name = "firebase-ml-vision-object-detection-model", version = "22.0.3" }
 #kotlin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version = "$kotlin_version" }
 #gradle = { group = "com.android.tools.build", name = "gradle", version = "7.1.3" }

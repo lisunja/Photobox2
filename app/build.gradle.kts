@@ -33,6 +33,7 @@ android {
 
 dependencies {
 
+    implementation(libs.tensorflow)
     implementation(libs.ai)
     implementation(libs.scanner)
     implementation(libs.crop)
