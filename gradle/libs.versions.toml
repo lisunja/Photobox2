@@ -28,9 +28,10 @@ crop = { group = "com.theartofdev.edmodo", name = "android-image-cropper", versi
 scanner = { group = "com.journeyapps", name = "zxing-android-embedded", version = "4.3.0" }
 ai = { group = "com.quickbirdstudios", name = "opencv-contrib", version = "3.4.15" }
 tensorflow = { group = "org.tensorflow", name = "tensorflow-lite-support", version = "0.4.1" }
-#ai = { group = "com.google.firebase", name = "firebase-ml-vision-object-detection-model", version = "22.0.3" }
-#kotlin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version = "$kotlin_version" }
-#gradle = { group = "com.android.tools.build", name = "gradle", version = "7.1.3" }
+smb = { group = "com.hierynomus", name = "smbj", version = "0.13.0" }
+slf4j = { group = "org.slf4j", name = "slf4j-api", version = "1.7.32" }
+slf4j-log = { group = "org.slf4j", name = "slf4j-simple", version = "1.7.32" }
+service = { group = "androidx.work", name = "work-runtime", version = "2.7.1" }
 
 
 

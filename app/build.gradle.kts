@@ -32,7 +32,10 @@ android {
 }
 
 dependencies {
-
+    implementation(libs.service)
+    implementation(libs.smb)
+    implementation(libs.slf4j)
+    implementation(libs.slf4j.log)
     implementation(libs.tensorflow)
     implementation(libs.ai)
     implementation(libs.scanner)

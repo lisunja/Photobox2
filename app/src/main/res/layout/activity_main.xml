@@ -19,7 +19,9 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:visibility="visible"/>
+        android:inputType="number"
+        android:visibility="visible"
+        android:imeOptions="actionDone"/>
 
     <androidx.camera.view.PreviewView
         android:id="@+id/cameraPreview"
