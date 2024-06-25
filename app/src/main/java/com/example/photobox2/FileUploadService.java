@@ -22,13 +22,13 @@ public class FileUploadService extends Service {
     private Handler handler;
     private Runnable periodicTask;
 
-    public void setSample(String sample) {
-        this.sample = sample;
-    }
+//    public void setSample(String sample) {
+//        this.sample = sample;
+//    }
 
-    private String sample;
+//    private String sample = "12345";
     private static final long CHECK_INTERVAL = 30 * 1000;
-    private static final long DELETE_DELAY = 24 * 60 * 60 * 1000;
+    //private static final long DELETE_DELAY = 24 * 60 * 60 * 1000;
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -46,7 +46,7 @@ public class FileUploadService extends Service {
         periodicTask = new Runnable() {
             @Override
             public void run() {
-                checkAndUploadFiles();
+                uploadFile();
                 handler.postDelayed(this, CHECK_INTERVAL);
             }
         };
@@ -71,41 +71,40 @@ public class FileUploadService extends Service {
                 .build();
     }
 
-    private void checkAndUploadFiles() {
+//    private void checkAndUploadFiles() {
+////        String directoryPath = getFilesDir().getPath() + "/" + sample;
+////        File directory = new File(directoryPath);
+////
+////
+////        if (directory.exists() && directory.isDirectory()) {
+////            File[] files = directory.listFiles();
+////            if (files != null) {
+////                for (File file : files) {
+////                    if (file.isFile()) {
+//
+//                        uploadFile(/*file*/);
+//
+////                        scheduleFileDeletion(/*file*/);
+////                    }
+////                }
+////            }
+////        }
+//    }
 
-        String directoryPath = getFilesDir().getPath() + "/" + sample;
-        File directory = new File(directoryPath);
-
-
-        if (directory.exists() && directory.isDirectory()) {
-            File[] files = directory.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (file.isFile()) {
-
-                        uploadFile(file);
-
-                        scheduleFileDeletion(file);
-                    }
-                }
-            }
-        }
-    }
-
-    private void uploadFile(File file) {
-        String localFilePath = file.getAbsolutePath();
+    private void uploadFile(/*File file*/) {
+        String localFilePath = getFilesDir().getPath(); /*file.getAbsolutePath();*/
         SMBUtils smbUtils = new SMBUtils();
         if (smbUtils.checkConnection()) {
-            String remoteFolderPath = "IT\\30_LIMS_2\\50_Sample_Registration";
-            smbUtils.uploadFileToSmbServer(localFilePath, remoteFolderPath);
+            String remoteFolderPath = "IT\\30_LIMS_2\\50_Sample_Registration\\" ;
+            smbUtils.uploadAllFilesInDirectory (localFilePath, remoteFolderPath);
         }
     }
 
-    private void scheduleFileDeletion(File file) {
-        handler.postDelayed(() -> {
-            if (file.exists()) {
-                file.delete();
-            }
-        }, DELETE_DELAY);
-    }
+//    private void scheduleFileDeletion(File file) {
+//        handler.postDelayed(() -> {
+//            if (file.exists()) {
+//                file.delete();
+//            }
+//        }, DELETE_DELAY);
+//    }
 }
