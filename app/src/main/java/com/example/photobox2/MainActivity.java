@@ -6,10 +6,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.media.MediaPlayer;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.SystemClock;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -18,7 +18,6 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultCallback;
@@ -35,22 +34,22 @@ import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
+import com.example.photobox2.service.FileUploadService;
+import com.example.photobox2.utils.Photo;
+import com.example.photobox2.utils.Validation;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 import com.theartofdev.edmodo.cropper.CropImageView;
 
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Rect;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -60,15 +59,14 @@ import java.util.concurrent.Executors;
 
 
 public class MainActivity extends AppCompatActivity {
-    private final int factor = 5;
-    private String sample = "";
+    private Photo photoAction;
+    private String sampleNr = "";
     private PreviewView previewView;
     private ImageView imageView;
     private EditText sampleEditText;
     private CropImageView cropImageView;
     int cameraFacing = CameraSelector.LENS_FACING_BACK;
-    private Bitmap photo;
-    private Bitmap photoToSave;
+    private Bitmap originalPhoto;
     ImageButton photoBtn, scanBtn, checkBtn, deleteBtn;
 
     private final ActivityResultLauncher<String> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), new ActivityResultCallback<Boolean>() {
@@ -90,6 +88,12 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent);
         }
+      init();
+
+
+    }
+    public void init(){
+        photoAction = new Photo(findViewById(android.R.id.content));
         imageView = findViewById(R.id.photoImageView);
         previewView = findViewById(R.id.cameraPreview);
         sampleEditText = findViewById(R.id.editTextSampleNumber);
@@ -110,11 +114,11 @@ public class MainActivity extends AppCompatActivity {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     String result = sampleEditText.getText().toString();
-                    if(validateSample(result)) {
-                        sample = result;
+                    if(Validation.validateSampleNr(result)) {
+                        sampleNr = result;
                     }
                     else {
-                        playErrorSound(MainActivity.this);
+                        Validation.playErrorSound(MainActivity.this);
 
 
                     }
@@ -133,10 +137,10 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onClick(View v) {
-               // String lastPhoto = getLastImagePathFromTextFile();
+                // String lastPhoto = getLastImagePathFromTextFile();
                 if (cropImageView.getVisibility()==View.VISIBLE)
-                //deleteImg(lastPhoto, false);
-                imageView.setVisibility(View.GONE);
+                    //deleteImg(lastPhoto, false);
+                    imageView.setVisibility(View.GONE);
                 cropImageView.setVisibility(View.GONE);
                 previewView.setVisibility(View.VISIBLE);
                 startCamera(cameraFacing);
@@ -146,49 +150,28 @@ public class MainActivity extends AppCompatActivity {
         checkBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sample = sampleEditText.getText().toString();
-
-//                FileUploadService fileUploadService = new FileUploadService();
-//                fileUploadService.setSample(sample);
-
-                createDirectory(MainActivity.this, sample);
-//                    Thread thread = new Thread(() -> {
-                File imageFile = saveBitmapToDirectory(MainActivity.this, photoToSave, sample);
-//                if (imageFile != null) {
-//                    saveImagePathToFile(imageFile);
-//                }
-
-                    saveCropCoordinates(imageFile.getAbsolutePath());
-//                    });
-//                    thread.start();
+                sampleNr = sampleEditText.getText().toString();
+                if (Validation.validateSampleNr(sampleNr)) { // TODO
+                    createDirectory(MainActivity.this, sampleNr);
+                    //                    Thread thread = new Thread(() -> {
+                    File imageFile = saveBitmapToDirectory(MainActivity.this, originalPhoto, sampleNr);
+                    photoAction.setSampleNr(sampleNr);
+                    photoAction.saveCropCoordinates(imageFile.getAbsolutePath(), MainActivity.this);
+                    //                    });
+                    //                    thread.start();
                     cropImageView.setVisibility(View.GONE);
                     imageView.setVisibility(View.GONE);
                     previewView.setVisibility(View.VISIBLE);
                     startCamera(cameraFacing);
-
+                }
+                else {
+                    Validation.playErrorSound(MainActivity.this);
+                }
             }
         });
-
-
     }
 
 
-    public static void playErrorSound(Context context) {
-        MediaPlayer mediaPlayer = MediaPlayer.create(context, R.raw.beep);
-            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override
-                public void onCompletion(MediaPlayer mediaPlayer) {
-                    mediaPlayer.release();
-                }
-            });
-        mediaPlayer.start();
-        Toast.makeText(context, "Sample number must be an 8-digit number ", Toast.LENGTH_LONG).show();
-
-    }
-
-    public static boolean validateSample(String sample) {
-            return sample.matches("\\d{8}");
-    }
     private void createDirectory(Context context, String directoryName){
         File directory = new File(context.getFilesDir(), directoryName);
         if (!directory.exists()) {
@@ -204,17 +187,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public File saveBitmapToDirectory(Context context, Bitmap bitmap, String directoryName) {
-
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        // TODO java.time verwenden statt java.util.Date
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault());
         String currentTime = sdf.format(new Date());
-        String fileName = sample + ":" + currentTime + ".jpg";
+        String fileName = sampleNr + "_" + currentTime + ".jpg";
         File directory = new File(context.getFilesDir(), directoryName);
         File file = new File(directory, fileName);
         try {
-
             OutputStream os = new FileOutputStream(file);
-
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, os);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, os);
             os.flush();
             os.close();
             return file;
@@ -225,74 +206,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void showCropImageView() {
-
+    public void showCropImageView(Bitmap reducedPhoto) {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int width = displayMetrics.widthPixels;
+        int height = displayMetrics.heightPixels;
+        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) cropImageView.getLayoutParams();
+        params.width = height;
+        params.height = width;
+        cropImageView.setLayoutParams(params);
         cropImageView.setVisibility(View.VISIBLE);
         cropImageView.setAutoZoomEnabled(false);
         cropImageView.setMaxZoom(1);
         previewView.setVisibility(View.GONE);
+
         try {
 
-            ObjectDetection objectDetector = new ObjectDetection();
+            Rect objectLocation = ObjectDetection.detectObject(reducedPhoto);
 
-            org.opencv.core.Rect objectLocation = objectDetector.detectObject(photo);
-
-            if (isValidCoordinates(objectLocation)) {
+//            if (Validation.validateCoordinates(objectLocation)) { // TODO wirklich notwendig?
                 Log.d("MainActivity", "Object location: " + objectLocation);
-
-                cropImageView.setImageBitmap(photo);
-
-                int left = Math.max(0, objectLocation.x - 15);
-                int top = Math.max(0, objectLocation.y - 15);
-                int right = Math.min(photo.getWidth(), objectLocation.x + objectLocation.width + 15);
-                int bottom = Math.min(photo.getHeight(), objectLocation.y + objectLocation.height + 15);
-
-                android.graphics.Rect cropRect = new android.graphics.Rect(left, top, right, bottom);
+                cropImageView.setImageBitmap(reducedPhoto);
                 cropImageView.setScaleType(CropImageView.ScaleType.FIT_CENTER);
-                cropImageView.setCropRect(cropRect);
-            } else {
-                cropImageView.setScaleType(CropImageView.ScaleType.FIT_CENTER);
-                cropImageView.setImageBitmap(photo);
-            }
+                cropImageView.setCropRect(objectLocation);
+                sampleEditText.bringToFront();
+//            } else {
+//                cropImageView.setScaleType(CropImageView.ScaleType.FIT_CENTER);
+//                cropImageView.setImageBitmap(photo);
+//            }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
     }
-    private boolean isValidCoordinates(Rect coordinates) {
-        return coordinates != null && coordinates.width > 0 && coordinates.height > 0;
-    }
-    public void saveCropCoordinates(String lastPhotoPath) {
-        //String lastPhotoPath = getLastImagePathFromTextFile();
-        File photoFile = new File(lastPhotoPath);
 
-        File coordinatesFile = new File(getFilesDir() + "/" + sample , photoFile.getName() + ".txt");
-
-        if (photoFile.exists() && cropImageView != null) {
-            float[] cropPoints = cropImageView.getCropPoints();
-            if (cropPoints != null && cropPoints.length == 8) {
-                float bottom = Math.min(Math.min(cropPoints[0], cropPoints[2]), Math.min(cropPoints[4], cropPoints[6]));
-                float left = Math.min(Math.min(cropPoints[1], cropPoints[3]), Math.min(cropPoints[5], cropPoints[7]));
-                float  top= Math.max(Math.max(cropPoints[0], cropPoints[2]), Math.max(cropPoints[4], cropPoints[6]));
-                float right= Math.max(Math.max(cropPoints[1], cropPoints[3]), Math.max(cropPoints[5], cropPoints[7]));
-
-                try (FileOutputStream fos = new FileOutputStream(coordinatesFile, true)) {
-                    fos.write(("cropLeft=" + (int)left*factor + "\n").getBytes());
-                    fos.write(("cropTop=" + (int)bottom*factor + "\n").getBytes());
-                    fos.write(("cropRight=" + (int)right*factor + "\n").getBytes());
-                    fos.write(("cropBottom=" + (int)top*factor + "\n").getBytes());
-                    Toast.makeText(this, "Coordinates saved", Toast.LENGTH_SHORT).show();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    Toast.makeText(this, "Failed to save coordinates", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(this, "Invalid crop points", Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            Toast.makeText(this, "Photo file does not exist or cropImageView is null", Toast.LENGTH_SHORT).show();
-        }
-    }
     public void scanCode(){
         ScanOptions options = new ScanOptions();
         options.setPrompt("Volume up to flash on");
@@ -302,13 +249,14 @@ public class MainActivity extends AppCompatActivity {
         barLauncher.launch(options);
     }
     ActivityResultLauncher<ScanOptions> barLauncher = registerForActivityResult(new ScanContract(), result ->{
+        // TODO in den Einstellungen festlegen, ob Überprüfung der Probennummer erfolgt
         if(result.getContents()!=null){
-            sample = result.getContents();
-            if(validateSample(sample)){
-                sampleEditText.setText(sample);
+            sampleNr = result.getContents();
+            if(Validation.validateSampleNr(sampleNr)){
+                sampleEditText.setText(sampleNr);
             }
             else {
-                playErrorSound(MainActivity.this);
+                Validation.playErrorSound(MainActivity.this);
             }
         }
     });
@@ -363,25 +311,16 @@ public class MainActivity extends AppCompatActivity {
             public void onCaptureSuccess(@NonNull ImageProxy image) {
                 super.onCaptureSuccess(image);
                 Log.d("CameraX", "Capture success");
-                Bitmap bitmap = image.toBitmap();
+                originalPhoto = image.toBitmap();
                 image.close();
 
                 runOnUiThread(() -> {
-//                    long startTime = SystemClock.elapsedRealtime();
-                    Bitmap reducedPhoto = reducePhoto(bitmap);
-                    photo = rotateBitmap(reducedPhoto);
-                    Thread thread = new Thread(() -> {
-                    photoToSave = bitmap;
-                    });
-                    thread.start();
+                    Bitmap reducedPhoto = photoAction.reducePhoto(originalPhoto);
+                    // TODO https://stackoverflow.com/questions/3444764/rotate-view-hierarchy-90-degrees
+                    //photo = photoAction.rotateBitmap(reducedPhoto);
 
-                    //photo = restoreOriginalSize(rotatedBitmap, bitmap.getWidth(), bitmap.getHeight());
-//                    long endTime1 = SystemClock.elapsedRealtime();
-//                    long elapsedTime = endTime1 - startTime;
-//                    long startTime2 = SystemClock.elapsedRealtime();
-                    showCropImageView();
-//                    long endTime = SystemClock.elapsedRealtime();
-//                    long elapsedTime2 = endTime - startTime2;
+                    showCropImageView(reducedPhoto);
+
                 });
 
             }
@@ -392,29 +331,5 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
-    public Bitmap reducePhoto(Bitmap bitmap){
-        int width = bitmap.getWidth()/factor;
-        int height = bitmap.getHeight()/factor;
-        return Bitmap.createScaledBitmap(bitmap, width, height, true);
-    }
-    public Bitmap rotateBitmap(Bitmap bitmap) {
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        int[] pixels = new int[width * height];
-        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-
-        int[] rotatedPixels = new int[width * height];
-            for (int i = 0; i < height; ++i) {
-                for (int j = 0; j < width; ++j) {
-                    rotatedPixels[j * height + height - 1 - i] = pixels[i * width + j];
-                }
-            }
-
-
-        return Bitmap.createBitmap(rotatedPixels, height, width, Bitmap.Config.ARGB_8888);
-    }
-
-
 
 }

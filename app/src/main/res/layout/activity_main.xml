@@ -8,6 +8,7 @@
     android:fitsSystemWindows="true">
 
 
+
     <EditText
         android:id="@+id/editTextSampleNumber"
         android:layout_width="match_parent"
@@ -22,7 +23,16 @@
         android:inputType="number"
         android:visibility="visible"
         android:imeOptions="actionDone"/>
-
+    <com.theartofdev.edmodo.cropper.CropImageView
+        android:id="@+id/cropImageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/buttonsLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/editTextSampleNumber"
+        android:rotation="90"
+        android:visibility="gone"/>
     <androidx.camera.view.PreviewView
         android:id="@+id/cameraPreview"
         android:layout_width="0dp"
@@ -41,15 +51,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@mipmap/ic_launcher"
         android:visibility="gone"/>
-    <com.theartofdev.edmodo.cropper.CropImageView
-        android:id="@+id/cropImageView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@+id/editTextSampleNumber"
-        app:layout_constraintBottom_toTopOf="@+id/buttonsLayout"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:visibility="gone"/>
+
 
     <LinearLayout
         android:id="@+id/buttonsLayout"
@@ -80,19 +82,6 @@
             android:layout_weight="1"
             android:src="@drawable/ic_scan" />
 
-<!--        <ImageButton-->
-<!--            android:id="@+id/cropAct"-->
-<!--            android:layout_width="70dp"-->
-<!--            android:layout_height="70dp"-->
-<!--            android:layout_weight="1"-->
-<!--            android:src="@drawable/ic_crop" />-->
-
-<!--        <ImageButton-->
-<!--            android:id="@+id/aiCropAct"-->
-<!--            android:layout_width="70dp"-->
-<!--            android:layout_height="70dp"-->
-<!--            android:layout_weight="1"-->
-<!--            android:src="@drawable/ic_crop_ai" />-->
 
         <ImageButton
             android:id="@+id/checkAct"

@@ -13,11 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ObjectDetection {
-    public Rect detectObject(Bitmap bitmap) {
+    public static android.graphics.Rect detectObject(Bitmap bitmap) {
 
         Mat image = new Mat();
         Utils.bitmapToMat(bitmap, image);
-
 
         Mat gray = new Mat();
         Imgproc.cvtColor(image, gray, Imgproc.COLOR_BGR2GRAY);
@@ -44,11 +43,10 @@ public class ObjectDetection {
 
             if (area > 1000 &&
                     rect.width > 30 && rect.height > 30 &&
-                    rect.width < image.width() * 0.9 && rect.height < image.height() * 0.9) {
-                if (area > maxArea) {
-                    maxArea = area;
-                    boundingRect = rect;
-                }
+                    rect.width < image.width() * 0.9 && rect.height < image.height() * 0.9 &&
+                    area > maxArea) {
+                        maxArea = area;
+                        boundingRect = rect;
             }
         }
 
@@ -59,10 +57,20 @@ public class ObjectDetection {
         image.release();
         gray.release();
         hierarchy.release();
+        // TODO morphImage.release() usw. fehlt
         for (MatOfPoint contour : contours) {
             contour.release();
         }
 
-        return boundingRect;
+        return convertToAndroidRect(boundingRect, bitmap);
+    }
+
+    public static android.graphics.Rect convertToAndroidRect(org.opencv.core.Rect objectLocation, Bitmap bitmap) {
+        int left = Math.max(0, objectLocation.x - 15);
+        int top = Math.max(0, objectLocation.y - 15);
+        int right = Math.min(bitmap.getWidth(), objectLocation.x + objectLocation.width + 15);
+        int bottom = Math.min(bitmap.getHeight(), objectLocation.y + objectLocation.height + 15);
+
+        return new android.graphics.Rect(left, top, right, bottom);
     }
 }

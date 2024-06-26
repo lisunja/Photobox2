@@ -41,7 +41,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".FileUploadService"
+            android:name=".service.FileUploadService"
             android:enabled="true"
             android:exported="true" />
     </application>
