@@ -5,6 +5,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Handler;
@@ -17,10 +18,12 @@ import androidx.core.app.NotificationCompat;
 import java.io.File;
 
 public class FileUploadService extends Service {
+    private static final String REMOTE_FOLDER_PATH = "IT\\30_LIMS_2\\50_Sample_Registration\\"; //  10.0.2.2
 
     private static final String CHANNEL_ID = "FileUploadServiceChannel";
     private Handler handler;
     private Runnable periodicTask;
+    private static final int NOTIFICATION_ID = 1;
 
 //    public void setSample(String sample) {
 //        this.sample = sample;
@@ -38,6 +41,7 @@ public class FileUploadService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+
         createNotificationChannel();
         Notification notification = createNotification();
         startForeground(1, notification);
@@ -51,6 +55,7 @@ public class FileUploadService extends Service {
             }
         };
         handler.post(periodicTask);
+
     }
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -70,7 +75,18 @@ public class FileUploadService extends Service {
                 .setSmallIcon(R.drawable.ic_notification)
                 .build();
     }
-
+    private Notification resultNotification() {
+        return new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("File Upload Service")
+                .setContentText("All photos were uploaded")
+                .setSmallIcon(R.drawable.ic_notification)
+                .build();
+    }
+    public void showNotification(){
+        Notification notification = resultNotification();
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(NOTIFICATION_ID, notification);
+    }
 //    private void checkAndUploadFiles() {
 ////        String directoryPath = getFilesDir().getPath() + "/" + sample;
 ////        File directory = new File(directoryPath);
@@ -95,8 +111,8 @@ public class FileUploadService extends Service {
         String localFilePath = getFilesDir().getPath(); /*file.getAbsolutePath();*/
         SMBUtils smbUtils = new SMBUtils();
         if (smbUtils.checkConnection()) {
-            String remoteFolderPath = "IT\\30_LIMS_2\\50_Sample_Registration\\" ;
-            smbUtils.uploadAllFilesInDirectory (localFilePath, remoteFolderPath);
+
+            smbUtils.uploadAllFilesInDirectory (localFilePath, REMOTE_FOLDER_PATH);
         }
     }
 

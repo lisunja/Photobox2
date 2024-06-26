@@ -29,6 +29,7 @@ public class SMBUtils {
     private static final String USERNAME = "Yelyzaveta.Bespalova"; // DCBLN-TENTAMUS\
     private static final String PASSWORD = "89d866178530384810I";
 
+
     public boolean checkConnection(){
         Thread thread = new Thread(() -> {
             SMBClient client = new SMBClient();
@@ -64,6 +65,9 @@ public class SMBUtils {
                     Log.e(TAG, "Error reading directory", e);
                 }
             }
+            //FileUploadService fileUploadService = new FileUploadService();
+            //fileUploadService.showNotification();
+
         }
     }
 
