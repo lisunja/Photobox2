@@ -18,7 +18,7 @@ import com.example.photobox2.R;
 import com.example.photobox2.utils.SMBUtils;
 
 public class FileUploadService extends Service {
-    private static final String REMOTE_FOLDER_PATH = "IT\\30_LIMS_2\\50_Sample_Registration\\";
+    private static final String REMOTE_FOLDER_PATH = "IT\\30_LIMS_2\\50_Sample_Registration\\Bilacon\\Fotobox\\";
 
     private static final String CHANNEL_ID = "FileUploadServiceChannel";
     private Handler handler;

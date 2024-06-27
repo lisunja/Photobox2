@@ -26,8 +26,8 @@ import java.util.EnumSet;
 public class SMBUtils {
     private static final String SMB_SERVER_IP = "172.16.0.54"; //  10.0.2.2
     private static final String SHARE_NAME = "Daten";
-    private static final String USERNAME = "Yelyzaveta.Bespalova"; // DCBLN-TENTAMUS\
-    private static final String PASSWORD = "89d866178530384810I";
+    private static final String USERNAME = "fotobox.blc"; // DCBLN-TENTAMUS\
+    private static final String PASSWORD = "Chemie28";
 
     public boolean checkConnection(){
         Thread thread = new Thread(() -> {

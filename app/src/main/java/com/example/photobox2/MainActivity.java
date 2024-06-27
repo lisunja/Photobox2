@@ -316,9 +316,6 @@ public class MainActivity extends AppCompatActivity {
 
                 runOnUiThread(() -> {
                     Bitmap reducedPhoto = photoAction.reducePhoto(originalPhoto);
-                    // TODO https://stackoverflow.com/questions/3444764/rotate-view-hierarchy-90-degrees
-                    //photo = photoAction.rotateBitmap(reducedPhoto);
-
                     showCropImageView(reducedPhoto);
 
                 });
