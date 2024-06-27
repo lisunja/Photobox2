@@ -12,6 +12,8 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
@@ -37,9 +39,11 @@ import androidx.camera.view.PreviewView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
+import com.example.photobox2.database.SettingsDatabaseManager;
 import com.example.photobox2.service.FileUploadService;
 import com.example.photobox2.utils.Photo;
 import com.example.photobox2.utils.Validation;
+import com.example.photobox2.view.SettingActivity;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
@@ -68,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     int cameraFacing = CameraSelector.LENS_FACING_BACK;
     private Bitmap originalPhoto;
     ImageButton photoBtn, scanBtn, checkBtn, deleteBtn;
+//    private SettingsDatabaseManager settingsDatabaseManager;
 
     private final ActivityResultLauncher<String> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), new ActivityResultCallback<Boolean>() {
         @Override
@@ -88,9 +93,30 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent);
         }
-      init();
+//        settingsDatabaseManager = new SettingsDatabaseManager(this);
+//            try {
+//                settingsDatabaseManager.open();
+//            }
+//            catch (Exception e){
+//                e.printStackTrace();
+//            }
+            init();
+    }
 
-
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu, menu);
+        return true;
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.setting_action) {
+            Intent intent = new Intent(this, SettingActivity.class);
+            startActivity(intent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
     public void init(){
         photoAction = new Photo(findViewById(android.R.id.content));

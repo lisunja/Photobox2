@@ -5,6 +5,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Handler;
@@ -26,6 +27,7 @@ public class FileUploadService extends Service {
     private Runnable periodicTask;
     //30 sec
     private static final long CHECK_INTERVAL = 30 * 1000;
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -73,7 +75,7 @@ public class FileUploadService extends Service {
     //upload files into server
     private void uploadFile() {
         String localFilePath = getFilesDir().getPath();
-        SMBUtils smbUtils = new SMBUtils();
+        SMBUtils smbUtils = new SMBUtils(getApplicationContext());
         if (smbUtils.checkConnection()) {
             smbUtils.uploadAllFilesInDirectory (localFilePath, REMOTE_FOLDER_PATH);
         }

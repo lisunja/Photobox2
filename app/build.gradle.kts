@@ -32,6 +32,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.preferences)
     implementation(libs.service)
     implementation(libs.smb)
     implementation(libs.slf4j)

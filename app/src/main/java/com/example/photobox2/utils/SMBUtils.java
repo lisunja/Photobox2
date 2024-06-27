@@ -2,9 +2,12 @@ package com.example.photobox2.utils;
 
 import static android.content.ContentValues.TAG;
 
+import android.content.Context;
 import android.os.Build;
 import android.util.Log;
 
+import com.example.photobox2.MainActivity;
+import com.example.photobox2.database.SettingsDatabaseManager;
 import com.hierynomus.msdtyp.AccessMask;
 import com.hierynomus.mssmb2.SMB2CreateDisposition;
 import com.hierynomus.mssmb2.SMB2ShareAccess;
@@ -24,19 +27,37 @@ import java.nio.file.Paths;
 import java.util.EnumSet;
 
 public class SMBUtils {
-    private static final String SMB_SERVER_IP = "172.16.0.54"; //  10.0.2.2
-    private static final String SHARE_NAME = "Daten";
-    private static final String USERNAME = "fotobox.blc"; // DCBLN-TENTAMUS\
-    private static final String PASSWORD = "Chemie28";
+//    private static final String SMB_SERVER_IP = "172.16.0.54"; //  10.0.2.2
+//    private static final String SHARE_NAME = "Daten";
+//    private static final String USERNAME = "fotobox.blc"; // DCBLN-TENTAMUS\
+//    private static final String PASSWORD = "Chemie28";
+    private String ip;
+    private String shareName;
+    private String username;
+    private String password;
+    public SMBUtils(Context context){
+        SettingsDatabaseManager settingsDatabaseManager = new SettingsDatabaseManager(context);
+        try {
+            settingsDatabaseManager.open();
+            username = settingsDatabaseManager.getSetting("username");
+            ip = settingsDatabaseManager.getSetting("ip");
+            shareName = settingsDatabaseManager.getSetting("share");
+            password = settingsDatabaseManager.getSetting("password");
+            settingsDatabaseManager.close();
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+    }
 
     public boolean checkConnection(){
         Thread thread = new Thread(() -> {
             SMBClient client = new SMBClient();
-            AuthenticationContext auth = new AuthenticationContext(USERNAME, PASSWORD.toCharArray(), "");
+            AuthenticationContext auth = new AuthenticationContext(username, password.toCharArray(), "");
             try {
-                Connection connection = client.connect(SMB_SERVER_IP);
+                Connection connection = client.connect(ip);
                 Session session = connection.authenticate(auth);
-                DiskShare share = (DiskShare) session.connectShare(SHARE_NAME);
+                DiskShare share = (DiskShare) session.connectShare(shareName);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -71,10 +92,10 @@ public class SMBUtils {
         Thread thread = new Thread(() -> {
             try {
                 SMBClient client = new SMBClient();
-                AuthenticationContext auth = new AuthenticationContext(USERNAME, PASSWORD.toCharArray(), "");
-                Connection connection = client.connect(SMB_SERVER_IP);
+                AuthenticationContext auth = new AuthenticationContext(username, password.toCharArray(), "");
+                Connection connection = client.connect(ip);
                 Session session = connection.authenticate(auth);
-                DiskShare share = (DiskShare) session.connectShare(SHARE_NAME);
+                DiskShare share = (DiskShare) session.connectShare(shareName);
 
                 Path localPath;
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
