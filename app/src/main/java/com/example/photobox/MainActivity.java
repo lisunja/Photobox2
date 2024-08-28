@@ -1,4 +1,4 @@
-package com.example.photobox2;
+package com.example.photobox;
 
 
 import android.Manifest;
@@ -29,6 +29,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
+import androidx.camera.core.CameraControl;
+import androidx.camera.core.CameraInfo;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
@@ -39,11 +41,10 @@ import androidx.camera.view.PreviewView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
-import com.example.photobox2.database.SettingsDatabaseManager;
-import com.example.photobox2.service.FileUploadService;
-import com.example.photobox2.utils.Photo;
-import com.example.photobox2.utils.Validation;
-import com.example.photobox2.view.SettingActivity;
+import com.example.photobox.service.FileUploadService;
+import com.example.photobox.utils.Photo;
+import com.example.photobox.utils.Validation;
+import com.example.photobox.view.SettingActivity;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
@@ -64,6 +65,7 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     private Photo photoAction;
+    private Camera camera;
     private String sampleNr = "";
     private PreviewView previewView;
     private ImageView imageView;
@@ -72,6 +74,10 @@ public class MainActivity extends AppCompatActivity {
     int cameraFacing = CameraSelector.LENS_FACING_BACK;
     private Bitmap originalPhoto;
     ImageButton photoBtn, scanBtn, checkBtn, deleteBtn;
+//    private List<CameraInfo> cameras;
+
+//    Button halfZoom, oneZoom, twoZoom;
+//    private LinearLayout buttonLayout;
 //    private SettingsDatabaseManager settingsDatabaseManager;
 
     private final ActivityResultLauncher<String> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), new ActivityResultCallback<Boolean>() {
@@ -93,6 +99,20 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent);
         }
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+        }
+//        cameras = new ArrayList<>();
+//        ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+//        cameraProviderFuture.addListener(() -> {
+//            try {
+//                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+//                cameras = cameraProvider.getAvailableCameraInfos();
+//
+//            } catch (ExecutionException | InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }, ContextCompat.getMainExecutor(this));
 //        settingsDatabaseManager = new SettingsDatabaseManager(this);
 //            try {
 //                settingsDatabaseManager.open();
@@ -100,8 +120,51 @@ public class MainActivity extends AppCompatActivity {
 //            catch (Exception e){
 //                e.printStackTrace();
 //            }
-            init();
+        init();
     }
+//    private void openCameraByIndex(int index) {
+//        int aspectRatio = aspectRatio(previewView.getWidth(), previewView.getHeight());
+//        ListenableFuture<ProcessCameraProvider> listenableFuture = ProcessCameraProvider.getInstance(this);
+//        listenableFuture.addListener(() -> {
+//            try {
+//                ProcessCameraProvider cameraProvider = listenableFuture.get();
+//                Preview preview = new Preview.Builder()
+//                        .setTargetAspectRatio(aspectRatio)
+//                        .build();
+//                ImageCapture imageCapture = new ImageCapture.Builder()
+//                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+//                        .setTargetRotation(getWindowManager().getDefaultDisplay().getRotation())
+//                        .build();
+//                CameraSelector cameraSelector;
+//                if (index == 0) {
+//                    cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
+//                } else {
+//                    cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA;
+//                }
+//                cameraProvider.unbindAll();
+//                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
+//
+//                photoBtn.setOnClickListener(v -> {
+//                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+//                        activityResultLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+//                    } else {
+//                        if (previewView.getVisibility() == View.VISIBLE) {
+//                            takePicture(imageCapture);
+//                        } else {
+//                            cropImageView.setVisibility(View.GONE);
+//                            previewView.setVisibility(View.VISIBLE);
+//                            imageView.setVisibility(View.GONE);
+//                            openCameraByIndex(index);
+//                        }
+//                    }
+//                });
+//
+//                preview.setSurfaceProvider(previewView.getSurfaceProvider());
+//            } catch (ExecutionException | InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }, ContextCompat.getMainExecutor(this));
+//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -116,6 +179,18 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
             return true;
         }
+        if (id == R.id.halfZoom) {
+            setZoom(camera, 1.0f);
+            return true;
+        }
+        if (id == R.id.oneZoom) {
+            setZoom(camera, 2.0f);
+            return true;
+        }
+        if (id == R.id.twoZoom) {
+            setZoom(camera, 3.0f);
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
     public void init(){
@@ -126,13 +201,16 @@ public class MainActivity extends AppCompatActivity {
         cropImageView = findViewById(R.id.cropImageView);
         photoBtn = findViewById(R.id.photoAct);
         scanBtn = findViewById(R.id.scanAct);
-
+//        halfZoom = findViewById(R.id.halfZoom);
+//        oneZoom = findViewById(R.id.oneZoom);
+//        twoZoom = findViewById(R.id.twoZoom);
         checkBtn = findViewById(R.id.checkAct);
         deleteBtn = findViewById(R.id.deleteAct);
-
+//        buttonLayout = findViewById(R.id.buttonLayout);
         if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             activityResultLauncher.launch(Manifest.permission.CAMERA);
         } else {
+           // openCameraByIndex(2);
             startCamera(cameraFacing);
         }
         sampleEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -153,6 +231,25 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
+//        halfZoom.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//               setZoom(camera, 1.0f);
+//
+//            }
+//        });
+//        oneZoom.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                setZoom(camera, 2.0f);
+//            }
+//        });
+//        twoZoom.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                setZoom(camera, 3.0f);
+//            }
+//        });
         scanBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -169,6 +266,7 @@ public class MainActivity extends AppCompatActivity {
                     imageView.setVisibility(View.GONE);
                 cropImageView.setVisibility(View.GONE);
                 previewView.setVisibility(View.VISIBLE);
+//                buttonLayout.setVisibility(View.VISIBLE);
                 startCamera(cameraFacing);
             }
         });
@@ -185,6 +283,7 @@ public class MainActivity extends AppCompatActivity {
                     photoAction.saveCropCoordinates(imageFile.getAbsolutePath(), MainActivity.this);
                     //                    });
                     //                    thread.start();
+//                    buttonLayout.setVisibility(View.VISIBLE);
                     cropImageView.setVisibility(View.GONE);
                     imageView.setVisibility(View.GONE);
                     previewView.setVisibility(View.VISIBLE);
@@ -196,7 +295,22 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    private float getMinZoom(Camera camera) {
+        CameraInfo cameraInfo = camera.getCameraInfo();
+        return cameraInfo.getZoomState().getValue().getMinZoomRatio();
+    }
 
+    private float getMaxZoom(Camera camera) {
+        CameraInfo cameraInfo = camera.getCameraInfo();
+        return cameraInfo.getZoomState().getValue().getMaxZoomRatio();
+    }
+
+    private void setZoom(Camera camera, float zoomRatio) {
+        float minZoom = getMinZoom(camera);
+        float maxZoom = getMaxZoom(camera);
+        CameraControl cameraControl = camera.getCameraControl();
+        cameraControl.setZoomRatio(zoomRatio);
+    }
 
     private void createDirectory(Context context, String directoryName){
         File directory = new File(context.getFilesDir(), directoryName);
@@ -251,11 +365,11 @@ public class MainActivity extends AppCompatActivity {
             Rect objectLocation = ObjectDetection.detectObject(reducedPhoto);
 
 //            if (Validation.validateCoordinates(objectLocation)) { // TODO wirklich notwendig?
-                Log.d("MainActivity", "Object location: " + objectLocation);
-                cropImageView.setImageBitmap(reducedPhoto);
-                cropImageView.setScaleType(CropImageView.ScaleType.FIT_CENTER);
-                cropImageView.setCropRect(objectLocation);
-                sampleEditText.bringToFront();
+            Log.d("MainActivity", "Object location: " + objectLocation);
+            cropImageView.setImageBitmap(reducedPhoto);
+            cropImageView.setScaleType(CropImageView.ScaleType.FIT_CENTER);
+            cropImageView.setCropRect(objectLocation);
+            sampleEditText.bringToFront();
 //            } else {
 //                cropImageView.setScaleType(CropImageView.ScaleType.FIT_CENTER);
 //                cropImageView.setImageBitmap(photo);
@@ -305,7 +419,7 @@ public class MainActivity extends AppCompatActivity {
                 CameraSelector cameraSelector = new CameraSelector.Builder()
                         .requireLensFacing(cameraFacing).build();
                 cameraProvider.unbindAll();
-                Camera camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
+                camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
                 photoBtn.setOnClickListener(new View.OnClickListener(){
 
                     @Override
@@ -315,6 +429,7 @@ public class MainActivity extends AppCompatActivity {
                         } else {
                             if (previewView.getVisibility() == View.VISIBLE) {
                                 takePicture(imageCapture);
+//                                buttonLayout.setVisibility(View.GONE);
                             } else {
                                 cropImageView.setVisibility(View.GONE);
                                 previewView.setVisibility(View.VISIBLE);

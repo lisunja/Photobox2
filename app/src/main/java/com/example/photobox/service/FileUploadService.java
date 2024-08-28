@@ -1,4 +1,4 @@
-package com.example.photobox2.service;
+package com.example.photobox.service;
 
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -11,15 +11,22 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 
-import com.example.photobox2.R;
-import com.example.photobox2.utils.SMBUtils;
+import com.example.photobox.utils.LogUtil;
+import com.example.photobox.utils.SMBUtils;
+import com.example.photobox.utils.SecureStorage;
+import com.example.photobox.R;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class FileUploadService extends Service {
-    private static final String REMOTE_FOLDER_PATH = "IT\\30_LIMS_2\\50_Sample_Registration\\Bilacon\\Fotobox\\";
+    //private static final String REMOTE_FOLDER_PATH = "IT\\30_LIMS_2\\50_Sample_Registration\\Bilacon\\Fotobox\\";
 
     private static final String CHANNEL_ID = "FileUploadServiceChannel";
     private Handler handler;
@@ -27,6 +34,7 @@ public class FileUploadService extends Service {
     private Runnable periodicTask;
     //30 sec
     private static final long CHECK_INTERVAL = 30 * 1000;
+    private Context context;
 
     @Nullable
     @Override
@@ -37,7 +45,7 @@ public class FileUploadService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-
+        context = this;
         createNotificationChannel();
         Notification notification = createNotification();
         startForeground(1, notification);
@@ -46,7 +54,12 @@ public class FileUploadService extends Service {
         periodicTask = new Runnable() {
             @Override
             public void run() {
-                uploadFile();
+                try {
+                    uploadFile();
+                }catch (Exception e){
+                    Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+
                 handler.postDelayed(this, CHECK_INTERVAL);
             }
         };
@@ -74,10 +87,32 @@ public class FileUploadService extends Service {
     }
     //upload files into server
     private void uploadFile() {
-        String localFilePath = getFilesDir().getPath();
-        SMBUtils smbUtils = new SMBUtils(getApplicationContext());
-        if (smbUtils.checkConnection()) {
-            smbUtils.uploadAllFilesInDirectory (localFilePath, REMOTE_FOLDER_PATH);
-        }
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.submit(() -> {
+            try {
+                String localFilePath = getFilesDir().getPath();
+                SecureStorage secureStorage = new SecureStorage(context);
+                String remotePath = secureStorage.getRemotePath();
+//                if(remotePath == null){
+//                    remotePath = "T\\IT\\30_LIMS_2\\50_Sample_Registration\\Bilacon\\Fotobox\\";
+//                }
+                SMBUtils smbUtils = new SMBUtils(context);
+                if (smbUtils.checkConnection(context)) {
+                        smbUtils.uploadAllFilesInDirectory(context,localFilePath, remotePath);
+                } else {
+                    throw new Exception("No connection to the server");
+                }
+            } catch (Exception e) {
+                Log.e("FileUploadService", "Upload failed", e);
+                // Handle exception appropriately
+            }
+        });
     }
+
+    @Override
+    public void onDestroy() {
+        handler.removeCallbacks(periodicTask);
+        super.onDestroy();
+    }
+
 }

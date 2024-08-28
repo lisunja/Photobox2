@@ -1,11 +1,11 @@
-package com.example.photobox2.utils;
+package com.example.photobox.utils;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.view.View;
 import android.widget.Toast;
 
-import com.example.photobox2.R;
+import com.example.photobox.R;
 import com.theartofdev.edmodo.cropper.CropImageView;
 
 import java.io.File;

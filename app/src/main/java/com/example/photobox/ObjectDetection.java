@@ -1,4 +1,4 @@
-package com.example.photobox2;
+package com.example.photobox;
 
 import android.graphics.Bitmap;
 

@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -40,6 +41,8 @@
         app:layout_constraintTop_toBottomOf="@+id/editTextSampleNumber"
         android:rotation="90"
         android:visibility="gone"/>
+
+
     <androidx.camera.view.PreviewView
         android:id="@+id/cameraPreview"
         android:layout_width="0dp"
@@ -49,6 +52,41 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextSampleNumber" />
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/buttonLayout"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:gravity="center"-->
+<!--        android:orientation="horizontal"-->
+<!--        app:layout_constraintBottom_toTopOf="@+id/buttonsLayout"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintStart_toStartOf="parent" >-->
+<!--        <Button-->
+<!--            android:id="@+id/halfZoom"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="@string/_0_5x"-->
+<!--            android:textColor="@color/black"-->
+<!--            android:layout_weight="1" />-->
+
+<!--        <Button-->
+<!--            android:id="@+id/oneZoom"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="@string/_1x"-->
+<!--            android:textColor="@color/black"-->
+<!--            android:layout_weight="1" />-->
+<!--        <Button-->
+<!--            android:id="@+id/twoZoom"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="@string/_2x"-->
+<!--            android:textColor="@color/black"-->
+<!--            android:layout_weight="1" />-->
+<!--    </LinearLayout>-->
+
+
     <ImageView
         android:id="@+id/photoImageView"
         android:layout_width="match_parent"
@@ -58,7 +96,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@mipmap/ic_launcher"
         android:visibility="gone"/>
-
 
     <LinearLayout
         android:id="@+id/buttonsLayout"

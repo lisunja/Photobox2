@@ -5,34 +5,34 @@
         <EditTextPreference
             android:key="username"
             android:title="Username"
-            android:summary="Add name, that has access into Netzwerk"
+            android:summary="i.e Yelyzaveta.Bespalova"
             android:defaultValue="fotobox.blc"
             android:icon="@drawable/ic_man"/>
         <EditTextPreference
             android:key="ip"
             android:title="IP"
-            android:summary="Add smb server IP"
+            android:summary="i.e 172.16.0.54"
             android:defaultValue="172.16.0.54"
             android:inputType="text"
             android:icon="@drawable/ic_network_ping"/>
         <EditTextPreference
             android:key="share"
             android:title="Share name"
-            android:summary="Add the main directory. For example: Daten"
+            android:summary="i.e Daten"
             android:defaultValue="Daten"
             android:inputType="text"
             android:icon="@drawable/ic_folder"/>
         <EditTextPreference
             android:key="password"
             android:title="Password"
-            android:summary="Add password"
+            android:summary="i.e 12345678"
             android:defaultValue="Chemie28"
             android:inputType="text"
             android:icon="@drawable/ic_password"/>
         <EditTextPreference
             android:key="remote_path"
             android:title="Remote path"
-            android:summary="Add remote folder path"
+            android:summary="i.e IT\\30_LIMS_2\\50_Sample_Registration\\Bilacon\\Fotobox\\"
             android:defaultValue="IT\30_LIMS_2\50_Sample_Registration\Bilacon\Fotobox\"
             android:inputType="text"
             android:icon="@drawable/ic_folder_shared"/>

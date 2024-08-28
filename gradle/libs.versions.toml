@@ -7,7 +7,9 @@ appcompat = "1.6.1"
 material = "1.12.0"
 activity = "1.8.0"
 constraintlayout = "2.1.4"
-cameraxVersion = "1.3.0-rc01"
+cameraxVersion = "1.4.0-beta02"
+
+
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -23,6 +25,7 @@ camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", versi
 camera-video = { group = "androidx.camera", name = "camera-video", version.ref = "cameraxVersion" }
 camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraxVersion" }
 camera-extensions = { group = "androidx.camera", name = "camera-extensions", version.ref = "cameraxVersion" }
+
 gms = { group = "com.google.android.gms", name = "play-services-vision", version = "20.1.3" }
 crop = { group = "com.theartofdev.edmodo", name = "android-image-cropper", version = "2.8.0" }
 scanner = { group = "com.journeyapps", name = "zxing-android-embedded", version = "4.3.0" }
@@ -33,6 +36,7 @@ slf4j = { group = "org.slf4j", name = "slf4j-api", version = "1.7.32" }
 slf4j-log = { group = "org.slf4j", name = "slf4j-simple", version = "1.7.32" }
 service = { group = "androidx.work", name = "work-runtime", version = "2.7.1" }
 preferences = { group = "androidx.preference", name = "preference", version = "1.1.1" }
+security = {group = "androidx.security", name = "security-crypto", version = "1.1.0-alpha03"}
 
 
 

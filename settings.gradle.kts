@@ -23,6 +23,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Photobox2"
+rootProject.name = "Photobox"
 include(":app")
  

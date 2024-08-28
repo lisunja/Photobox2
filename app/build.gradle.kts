@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.photobox2"
+    namespace = "com.example.photobox"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.photobox2"
+        applicationId = "com.example.photobox"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -32,6 +32,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.security)
     implementation(libs.preferences)
     implementation(libs.service)
     implementation(libs.smb)

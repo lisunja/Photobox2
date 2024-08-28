@@ -1,10 +1,10 @@
-package com.example.photobox2.utils;
+package com.example.photobox.utils;
 
 import android.content.Context;
 import android.media.MediaPlayer;
 import android.widget.Toast;
 
-import com.example.photobox2.R;
+import com.example.photobox.R;
 
 import org.opencv.core.Rect;
 
