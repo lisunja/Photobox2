@@ -57,7 +57,9 @@ public class SecureStorage {
     public String getRemotePath() {
         return getStringFromSharedPreferences("remote_path");
     }
-
+    public String getYear() {
+        return getStringFromSharedPreferences("year");
+    }
     private String getStringFromSharedPreferences(String key) {
         try {
             MasterKey masterKey = new MasterKey.Builder(context)

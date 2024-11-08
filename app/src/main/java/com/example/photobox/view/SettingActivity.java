@@ -1,5 +1,6 @@
 package com.example.photobox.view;
 
+import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
@@ -65,6 +66,19 @@ public class SettingActivity extends AppCompatActivity {
                 SecureStorage secureStorage = new SecureStorage(getContext());
                 String value = sharedPreferences.getString(key, "");
                 secureStorage.saveValue(value, "remote_path");
+            }
+            if (key.equals("year")){
+                SecureStorage secureStorage = new SecureStorage(getContext());
+                String value = sharedPreferences.getString(key, "");
+                if (value.matches("\\d{2}")) {
+                    secureStorage.saveValue(value, "year");
+                } else {
+                    new AlertDialog.Builder(getContext())
+                            .setTitle("Invalid Input")
+                            .setMessage("Please enter a valid two-digit year (e.g., 24 for 2024).")
+                            .setPositiveButton("OK", null)
+                            .show();
+                }
             }
 //            else {
 //                String value = sharedPreferences.getString(key, "");

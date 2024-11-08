@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.photobox.R;
+import com.example.photobox.log.Logger;
 import com.hierynomus.msdtyp.AccessMask;
 import com.hierynomus.mssmb2.SMB2CreateDisposition;
 import com.hierynomus.mssmb2.SMB2ShareAccess;
@@ -52,6 +53,7 @@ public class SMBUtils {
         try {
 //            settingsDatabaseManager.open();
             username = secureStorage.getUsername();
+
             ip = secureStorage.getIp();
             shareName = secureStorage.getShare();
             password = secureStorage.getPassword();
@@ -108,6 +110,7 @@ public class SMBUtils {
                 /*DiskShare*/ share = (DiskShare) session.connectShare(shareName);
                 return true;
             } catch (Exception e) {
+                Logger.getInstance(context).write("Error during SMB connection or file upload" + e);
                 Log.e(TAG, "Error during SMB connection or file upload", e);
                 LogUtil.writeLogToExternalStorage(context,"Error during SMB connection or file upload" + e);
 
@@ -148,6 +151,7 @@ public class SMBUtils {
                         }
                     }
                 } catch (IOException e) {
+                    Logger.getInstance(context).write("Error reading directory" + e);
                     Log.e(TAG, "Error reading directory", e);
 
                 }
@@ -176,10 +180,8 @@ public class SMBUtils {
 
                 }
 
-                // Продолжение загрузки файлов
-                uploadRecursion(share, localPath, remoteFolderPath);
+                uploadRecursion(share, localPath, remoteFolderPath, context);
 
-                // Удаление локальной директории после загрузки
                 deleteDirectory(entry);
 
                 share.close();
@@ -187,10 +189,13 @@ public class SMBUtils {
                 connection.close();
 
             } catch (SMBApiException e) {
-               showToast(context, "Wrong data");
+                Logger.getInstance(context).write("Wrong data" + e);
+                showToast(context, "Wrong data");
             } catch (IOException e) {
+                Logger.getInstance(context).write("I/O Error during SMB connection or file upload" + e);
                 Log.e(TAG, "I/O Error during SMB connection or file upload", e);
             } catch (Exception e) {
+                Logger.getInstance(context).write("Unexpected error during SMB connection or file upload" + e);
                 Log.e(TAG, "Unexpected error during SMB connection or file upload", e);
             }
         });
@@ -198,7 +203,7 @@ public class SMBUtils {
     }
 
 
-    private void uploadRecursion(DiskShare share, Path localPath, String remotePath) {
+    private void uploadRecursion(DiskShare share, Path localPath, String remotePath, Context context) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (Files.isDirectory(localPath)) {
@@ -212,7 +217,9 @@ public class SMBUtils {
                         for (Path entry : stream) {
                             String childRemotePath = remotePath + "\\" + entry.getFileName().toString();
                             Log.d(TAG, "Recursing into directory: " + childRemotePath);
-                            uploadRecursion(share, entry, childRemotePath);
+                            Logger.getInstance(context).write("Recursing into directory: " + childRemotePath);
+                            uploadRecursion(share, entry, childRemotePath, context);
+
                         }
                     }
                 } else {
@@ -235,8 +242,10 @@ public class SMBUtils {
                             os.write(buffer, 0, bytesRead);
                         }
                         Log.d(TAG, "Finished writing file: " + remotePath);
+                        Logger.getInstance(context).write("Finished writing file: " + remotePath );
                     } catch (IOException e) {
                         Log.e(TAG, "Error during file upload", e);
+                        Logger.getInstance(context).write("Error during file upload" + e + remotePath);
                     }
                 }
             }
@@ -244,6 +253,7 @@ public class SMBUtils {
             Log.e(TAG, "Error during directory traversal", e);
         }
         Log.d(TAG, "Finished uploadRecursion for path: " + localPath);
+        Logger.getInstance(context).write("Finished uploadRecursion for path: " + localPath);
     }
 
     private void deleteDirectory(Path path) {

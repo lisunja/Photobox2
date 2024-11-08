@@ -6,6 +6,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
@@ -41,6 +44,7 @@ import androidx.camera.view.PreviewView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
+import com.example.photobox.log.Logger;
 import com.example.photobox.service.FileUploadService;
 import com.example.photobox.utils.Photo;
 import com.example.photobox.utils.Validation;
@@ -62,6 +66,8 @@ import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
+import android.graphics.ColorMatrix;
+
 
 public class MainActivity extends AppCompatActivity {
     private Photo photoAction;
@@ -73,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
     private CropImageView cropImageView;
     int cameraFacing = CameraSelector.LENS_FACING_BACK;
     private Bitmap originalPhoto;
+    private Bitmap blackWhitePhoto;
     ImageButton photoBtn, scanBtn, checkBtn, deleteBtn;
 //    private List<CameraInfo> cameras;
 
@@ -218,13 +225,11 @@ public class MainActivity extends AppCompatActivity {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     String result = sampleEditText.getText().toString();
-                    if(Validation.validateSampleNr(result)) {
+                    if(Validation.validateSampleNr(result, getApplicationContext())) {
                         sampleNr = result;
                     }
                     else {
                         Validation.playErrorSound(MainActivity.this);
-
-
                     }
                     return true;
                 }
@@ -275,11 +280,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 sampleNr = sampleEditText.getText().toString();
-                if (Validation.validateSampleNr(sampleNr)) { // TODO
+                if (Validation.validateSampleNr(sampleNr, getApplicationContext())) {
+                    Logger.getInstance(getApplicationContext()).write("checkbutton clicked");
                     createDirectory(MainActivity.this, sampleNr);
                     //                    Thread thread = new Thread(() -> {
-                    File imageFile = saveBitmapToDirectory(MainActivity.this, originalPhoto, sampleNr);
+                    File imageFile = saveBitmapToDirectory(MainActivity.this, blackWhitePhoto /*originalPhoto*/, sampleNr);
                     photoAction.setSampleNr(sampleNr);
+                    Logger.getInstance(getApplicationContext()).write("sample number:" + sampleNr);
                     photoAction.saveCropCoordinates(imageFile.getAbsolutePath(), MainActivity.this);
                     //                    });
                     //                    thread.start();
@@ -306,8 +313,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setZoom(Camera camera, float zoomRatio) {
-        float minZoom = getMinZoom(camera);
-        float maxZoom = getMaxZoom(camera);
         CameraControl cameraControl = camera.getCameraControl();
         cameraControl.setZoomRatio(zoomRatio);
     }
@@ -331,6 +336,7 @@ public class MainActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault());
         String currentTime = sdf.format(new Date());
         String fileName = sampleNr + "_" + currentTime + ".jpg";
+        Logger.getInstance(getApplicationContext()).write("save file:" + fileName);
         File directory = new File(context.getFilesDir(), directoryName);
         File file = new File(directory, fileName);
         try {
@@ -392,7 +398,7 @@ public class MainActivity extends AppCompatActivity {
         // TODO in den Einstellungen festlegen, ob Überprüfung der Probennummer erfolgt
         if(result.getContents()!=null){
             sampleNr = result.getContents();
-            if(Validation.validateSampleNr(sampleNr)){
+            if(Validation.validateSampleNr(sampleNr, getApplicationContext())){
                 sampleEditText.setText(sampleNr);
             }
             else {
@@ -456,7 +462,11 @@ public class MainActivity extends AppCompatActivity {
                 image.close();
 
                 runOnUiThread(() -> {
-                    Bitmap reducedPhoto = photoAction.reducePhoto(originalPhoto);
+                    //only for labs in Israel black-white format
+
+                   blackWhitePhoto = convertToGrayScale(originalPhoto);
+
+                    Bitmap reducedPhoto = photoAction.reducePhoto(/*originalPhoto*/blackWhitePhoto);
                     showCropImageView(reducedPhoto);
 
                 });
@@ -470,4 +480,15 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    public Bitmap convertToGrayScale(Bitmap original){
+        Bitmap grayBitmap = Bitmap.createBitmap(original.getWidth(), original.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(grayBitmap);
+        ColorMatrix colorMatrix = new ColorMatrix();
+        colorMatrix.setSaturation(0);
+        Paint paint = new Paint();
+        paint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
+        canvas.drawBitmap(original, 0, 0, paint);
+
+        return grayBitmap;
+    }
 }
