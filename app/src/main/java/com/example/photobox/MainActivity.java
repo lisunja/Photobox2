@@ -2,12 +2,16 @@ package com.example.photobox;
 
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Build;
@@ -44,11 +48,15 @@ import androidx.camera.view.PreviewView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
-import com.example.photobox.log.Logger;
+import com.example.photobox.log.LogUtil;
+
 import com.example.photobox.service.FileUploadService;
 import com.example.photobox.utils.Photo;
+import com.example.photobox.utils.SMBUtils;
 import com.example.photobox.utils.Validation;
 import com.example.photobox.view.SettingActivity;
+
+import com.example.photobox.view.TrashActivity;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
@@ -64,7 +72,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import android.graphics.ColorMatrix;
 
@@ -79,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
     private CropImageView cropImageView;
     int cameraFacing = CameraSelector.LENS_FACING_BACK;
     private Bitmap originalPhoto;
-    private Bitmap blackWhitePhoto;
+//    private Bitmap blackWhitePhoto;
     ImageButton photoBtn, scanBtn, checkBtn, deleteBtn;
 //    private List<CameraInfo> cameras;
 
@@ -105,6 +115,10 @@ public class MainActivity extends AppCompatActivity {
         Intent serviceIntent = new Intent(this, FileUploadService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent);
+//            ExecutorService executor = Executors.newSingleThreadExecutor();
+//            executor.submit(() -> {
+//                scheduleDirectoryDeletion(getApplicationContext());
+//            });
         }
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
@@ -127,7 +141,9 @@ public class MainActivity extends AppCompatActivity {
 //            catch (Exception e){
 //                e.printStackTrace();
 //            }
+
         init();
+
     }
 //    private void openCameraByIndex(int index) {
 //        int aspectRatio = aspectRatio(previewView.getWidth(), previewView.getHeight());
@@ -173,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
 //        }, ContextCompat.getMainExecutor(this));
 //    }
 
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu, menu);
@@ -183,6 +200,11 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
         if (id == R.id.setting_action) {
             Intent intent = new Intent(this, SettingActivity.class);
+            startActivity(intent);
+            return true;
+        }
+        if (id == R.id.trash_action) {
+            Intent intent = new Intent(this, TrashActivity.class);
             startActivity(intent);
             return true;
         }
@@ -227,6 +249,7 @@ public class MainActivity extends AppCompatActivity {
                     String result = sampleEditText.getText().toString();
                     if(Validation.validateSampleNr(result, getApplicationContext())) {
                         sampleNr = result;
+                        LogUtil.writeLogToExternalStorage("Scan sample number: " + sampleNr);
                     }
                     else {
                         Validation.playErrorSound(MainActivity.this);
@@ -281,12 +304,13 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 sampleNr = sampleEditText.getText().toString();
                 if (Validation.validateSampleNr(sampleNr, getApplicationContext())) {
-                    Logger.getInstance(getApplicationContext()).write("checkbutton clicked");
+                    LogUtil.writeLogToExternalStorage("Checkbutton clicked");
                     createDirectory(MainActivity.this, sampleNr);
                     //                    Thread thread = new Thread(() -> {
-                    File imageFile = saveBitmapToDirectory(MainActivity.this, blackWhitePhoto /*originalPhoto*/, sampleNr);
+                    Bitmap rotatedBitmap = getRotatedBitmap();
+                    File imageFile = saveBitmapToDirectory(MainActivity.this,/* blackWhitePhoto*/ rotatedBitmap, sampleNr);
                     photoAction.setSampleNr(sampleNr);
-                    Logger.getInstance(getApplicationContext()).write("sample number:" + sampleNr);
+//                    LogUtil.writeLogToExternalStorage("sample number:" + sampleNr);
                     photoAction.saveCropCoordinates(imageFile.getAbsolutePath(), MainActivity.this);
                     //                    });
                     //                    thread.start();
@@ -336,7 +360,7 @@ public class MainActivity extends AppCompatActivity {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault());
         String currentTime = sdf.format(new Date());
         String fileName = sampleNr + "_" + currentTime + ".jpg";
-        Logger.getInstance(getApplicationContext()).write("save file:" + fileName);
+//        LogUtil.writeLogToExternalStorage("Saving time:" + currentTime);
         File directory = new File(context.getFilesDir(), directoryName);
         File file = new File(directory, fileName);
         try {
@@ -344,8 +368,13 @@ public class MainActivity extends AppCompatActivity {
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, os);
             os.flush();
             os.close();
+            LogUtil.writeLogToExternalStorage("Saved file: " + fileName);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Validation.showFiles(directory.toPath(),1);
+            }
             return file;
         } catch (IOException e) {
+            LogUtil.writeLogToExternalStorage("Problems during saving the file: " + fileName);
             e.printStackTrace();
             return null;
         }
@@ -400,6 +429,8 @@ public class MainActivity extends AppCompatActivity {
             sampleNr = result.getContents();
             if(Validation.validateSampleNr(sampleNr, getApplicationContext())){
                 sampleEditText.setText(sampleNr);
+                LogUtil.writeLogToExternalStorage("Scan sample number: " + sampleNr);
+
             }
             else {
                 Validation.playErrorSound(MainActivity.this);
@@ -458,15 +489,16 @@ public class MainActivity extends AppCompatActivity {
             public void onCaptureSuccess(@NonNull ImageProxy image) {
                 super.onCaptureSuccess(image);
                 Log.d("CameraX", "Capture success");
+                LogUtil.writeLogToExternalStorage("Take photo");
                 originalPhoto = image.toBitmap();
                 image.close();
 
                 runOnUiThread(() -> {
                     //only for labs in Israel black-white format
 
-                   blackWhitePhoto = convertToGrayScale(originalPhoto);
+//                   blackWhitePhoto = convertToGrayScale(originalPhoto);
 
-                    Bitmap reducedPhoto = photoAction.reducePhoto(/*originalPhoto*/blackWhitePhoto);
+                    Bitmap reducedPhoto = photoAction.reducePhoto(originalPhoto/*blackWhitePhoto*/);
                     showCropImageView(reducedPhoto);
 
                 });
@@ -479,16 +511,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
-    public Bitmap convertToGrayScale(Bitmap original){
-        Bitmap grayBitmap = Bitmap.createBitmap(original.getWidth(), original.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(grayBitmap);
-        ColorMatrix colorMatrix = new ColorMatrix();
-        colorMatrix.setSaturation(0);
-        Paint paint = new Paint();
-        paint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
-        canvas.drawBitmap(original, 0, 0, paint);
-
-        return grayBitmap;
+    public Bitmap getRotatedBitmap(){
+        Matrix matrix = new Matrix();
+        matrix.postRotate(90);
+        Bitmap rotatedBitmap = Bitmap.createBitmap(originalPhoto, 0, 0, originalPhoto.getWidth(), originalPhoto.getHeight(), matrix, true);
+        return rotatedBitmap;
     }
+//    public Bitmap convertToGrayScale(Bitmap original){
+//        Bitmap grayBitmap = Bitmap.createBitmap(original.getWidth(), original.getHeight(), Bitmap.Config.ARGB_8888);
+//        Canvas canvas = new Canvas(grayBitmap);
+//        ColorMatrix colorMatrix = new ColorMatrix();
+//        colorMatrix.setSaturation(0);
+//        Paint paint = new Paint();
+//        paint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
+//        canvas.drawBitmap(original, 0, 0, paint);
+//
+//        return grayBitmap;
+//    }
 }

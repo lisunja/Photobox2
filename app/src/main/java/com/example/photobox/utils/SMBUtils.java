@@ -3,6 +3,7 @@ package com.example.photobox.utils;
 import static android.content.ContentValues.TAG;
 
 import android.content.Context;
+import android.nfc.Tag;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,7 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.photobox.R;
-import com.example.photobox.log.Logger;
+import com.example.photobox.log.LogUtil;
 import com.hierynomus.msdtyp.AccessMask;
 import com.hierynomus.mssmb2.SMB2CreateDisposition;
 import com.hierynomus.mssmb2.SMB2ShareAccess;
@@ -24,6 +25,7 @@ import com.hierynomus.smbj.connection.Connection;
 import com.hierynomus.smbj.session.Session;
 import com.hierynomus.smbj.share.DiskShare;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,12 +33,17 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 public class SMBUtils {
 //    private static final String SMB_SERVER_IP = "172.16.0.54"; //  10.0.2.2
@@ -47,6 +54,9 @@ public class SMBUtils {
     private String shareName;
     private String username;
     private String password;
+    public static final String ERLEDIGT_DIR = "/data/data/com.example.photobox/files/erledigt";
+
+    private static final SimpleDateFormat FILE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
     public SMBUtils(Context context){
         SecureStorage secureStorage = new SecureStorage(context);
@@ -110,9 +120,8 @@ public class SMBUtils {
                 /*DiskShare*/ share = (DiskShare) session.connectShare(shareName);
                 return true;
             } catch (Exception e) {
-                Logger.getInstance(context).write("Error during SMB connection or file upload" + e);
+                LogUtil.writeLogToExternalStorage("Error during SMB connection or file upload" + e);
                 Log.e(TAG, "Error during SMB connection or file upload", e);
-                LogUtil.writeLogToExternalStorage(context,"Error during SMB connection or file upload" + e);
 
                 showToast(context, e.getMessage());
                 return false;
@@ -146,12 +155,17 @@ public class SMBUtils {
                     for (Path entry : stream) {
                         if (Files.isDirectory(entry)) {
                             String localFolderPath = entry.toString();
+                            Log.d(TAG,"Localpath: "+ localFolderPath);
+                            if (localFolderPath.contains("erledigt")) {
+                                deleteOldFiles(localFolderPath);
+                                return;
+                            }
                             String remoteFolderPath = remoteBaseFolderPath  + entry.getFileName().toString();
                             uploadFileToSmbServer(context,localFolderPath, remoteFolderPath, entry);
                         }
                     }
                 } catch (IOException e) {
-                    Logger.getInstance(context).write("Error reading directory" + e);
+                    LogUtil.writeLogToExternalStorage("Error reading directory" + e);
                     Log.e(TAG, "Error reading directory", e);
 
                 }
@@ -159,8 +173,49 @@ public class SMBUtils {
 
         }
     }
+    public static void deleteOldFiles(String directoryPath) {
+        File directory = new File(directoryPath);
+        if (directory.exists() && directory.isDirectory()) {
+            File[] files = directory.listFiles();
 
-    public void uploadFileToSmbServer(Context context, String localFolderPath, String remoteFolderPath, Path entry) {
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        String fileName = file.getName();
+                        try {
+                            int firstUnderscore = fileName.indexOf("_");
+                            int secondUnderscore = fileName.indexOf("_", firstUnderscore + 1);
+
+                            if (firstUnderscore == -1 || secondUnderscore == -1) {
+                                Log.d(TAG,"Skipping file with invalid format: " + fileName);
+                                continue;
+                            }
+
+                            String dateString = fileName.substring(firstUnderscore + 1, secondUnderscore);
+
+
+                            Date fileDate = FILE_DATE_FORMAT.parse(dateString);
+                            long fileAgeInMillis = new Date().getTime() - fileDate.getTime();
+                            long ageInDays = TimeUnit.MILLISECONDS.toDays(fileAgeInMillis);
+                            Log.d(TAG,"ageInDays: " + ageInDays);
+
+                            if (ageInDays >= 14) {
+                                if (file.delete()) {
+                                    Log.d(TAG,"Deleted file: " + file.getName());
+                                } else {
+                                    Log.d(TAG,"Failed to delete file: " + file.getName());
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            System.out.println("Error parsing date for file: " + fileName);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    public synchronized void uploadFileToSmbServer(Context context, String localFolderPath, String remoteFolderPath, Path entry) {
         Thread thread = new Thread(() -> {
             try {
                 SMBClient client = new SMBClient();
@@ -170,32 +225,33 @@ public class SMBUtils {
                 DiskShare share = (DiskShare) session.connectShare(shareName);
 
                 Path localPath = null;
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     localPath = Paths.get(localFolderPath);
                 }
 
                 if (!share.folderExists(remoteFolderPath)) {
                     Log.d(TAG, "Directory does not exist: " + remoteFolderPath);
                    showToast(context, "Wrong data. Set up in settings");
-
                 }
 
+
                 uploadRecursion(share, localPath, remoteFolderPath, context);
-
+                Validation.showFiles(localPath, 2);
                 deleteDirectory(entry);
-
+                Validation.showFiles(localPath, 3);
                 share.close();
                 session.close();
                 connection.close();
+                LogUtil.writeLogToExternalStorage("Photo was moved successfully" );
 
             } catch (SMBApiException e) {
-                Logger.getInstance(context).write("Wrong data" + e);
-                showToast(context, "Wrong data");
+                LogUtil.writeLogToExternalStorage("Wrong data" + e);
+                //                showToast(context, "Wrong data");
             } catch (IOException e) {
-                Logger.getInstance(context).write("I/O Error during SMB connection or file upload" + e);
+                LogUtil.writeLogToExternalStorage("I/O Error during SMB connection or file upload" + e);
                 Log.e(TAG, "I/O Error during SMB connection or file upload", e);
             } catch (Exception e) {
-                Logger.getInstance(context).write("Unexpected error during SMB connection or file upload" + e);
+                LogUtil.writeLogToExternalStorage("Unexpected error during SMB connection or file upload" + e);
                 Log.e(TAG, "Unexpected error during SMB connection or file upload", e);
             }
         });
@@ -203,7 +259,7 @@ public class SMBUtils {
     }
 
 
-    private void uploadRecursion(DiskShare share, Path localPath, String remotePath, Context context) {
+    private synchronized void uploadRecursion(DiskShare share, Path localPath, String remotePath, Context context)  {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (Files.isDirectory(localPath)) {
@@ -217,7 +273,7 @@ public class SMBUtils {
                         for (Path entry : stream) {
                             String childRemotePath = remotePath + "\\" + entry.getFileName().toString();
                             Log.d(TAG, "Recursing into directory: " + childRemotePath);
-                            Logger.getInstance(context).write("Recursing into directory: " + childRemotePath);
+                            LogUtil.writeLogToExternalStorage("Recursing into directory: " + childRemotePath);
                             uploadRecursion(share, entry, childRemotePath, context);
 
                         }
@@ -242,10 +298,10 @@ public class SMBUtils {
                             os.write(buffer, 0, bytesRead);
                         }
                         Log.d(TAG, "Finished writing file: " + remotePath);
-                        Logger.getInstance(context).write("Finished writing file: " + remotePath );
+                        LogUtil.writeLogToExternalStorage("Finished writing file: " + remotePath);
                     } catch (IOException e) {
                         Log.e(TAG, "Error during file upload", e);
-                        Logger.getInstance(context).write("Error during file upload" + e + remotePath);
+                        LogUtil.writeLogToExternalStorage("Error during file upload" + e + remotePath);
                     }
                 }
             }
@@ -253,25 +309,52 @@ public class SMBUtils {
             Log.e(TAG, "Error during directory traversal", e);
         }
         Log.d(TAG, "Finished uploadRecursion for path: " + localPath);
-        Logger.getInstance(context).write("Finished uploadRecursion for path: " + localPath);
+        LogUtil.writeLogToExternalStorage("Finished uploadRecursion for path: " + localPath);
     }
 
     private void deleteDirectory(Path path) {
         try {
+            Path erledigtDir = Paths.get(ERLEDIGT_DIR);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!Files.exists(erledigtDir)) {
+                    Files.createDirectories(erledigtDir);
+                }
+            }
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Files.walk(path)
                         .sorted((a, b) -> b.compareTo(a))
                         .forEach(p -> {
                             try {
-                                Files.delete(p);
+                                if (Files.isDirectory(p) && p.equals(erledigtDir)) {
+                                    Log.d(TAG, "Skipped directory: " + p);
+                                    return;
+                                }
+                                if (Files.isDirectory(p)) {
+                                    Files.delete(p);
+                                    Log.d(TAG, "Deleted directory: " + p);
+                                } else {
+                                    String fileName = p.getFileName().toString();
+                                    String sampleNumber = fileName.split("_")[0];
+                                    Path sampleDir = erledigtDir.resolve(sampleNumber);
+                                    if (!Files.exists(sampleDir)) {
+                                        Files.createDirectories(sampleDir);
+                                    }
+                                    Path targetPath = sampleDir.resolve(p.getFileName());
+                                    Files.move(p, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+                                    Log.d(TAG, "Moved file to folder: " + sampleDir + " -> " + targetPath);
+                                }
                             } catch (IOException e) {
-                                Log.e(TAG, "Error deleting file: " + p, e);
+                                Log.e(TAG, "Error moving file: " + p, e);
                             }
                         });
             }
-            Log.d(TAG, "Deleted directory: " + path);
+
+            Log.d(TAG, "Moved all files from directory: " + path);
         } catch (IOException e) {
-            Log.e(TAG, "Error walking through directory: " + path, e);
+            Log.e(TAG, "Error handling directory: " + path, e);
         }
     }
 

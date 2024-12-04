@@ -3,13 +3,19 @@ package com.example.photobox.utils;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.widget.Toast;
 
 import com.example.photobox.R;
+import com.example.photobox.log.LogUtil;
 
 import org.opencv.core.Rect;
 
-import java.time.LocalDate;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.stream.Stream;
+
 
 public class Validation {
     public static void playErrorSound(Context context) {
@@ -57,7 +63,33 @@ public class Validation {
 //        return false;
 //    }
 
-
+//    peiodOfTime - indicator, that shows, when this methode was called (before uploading to the server or after)
+    public synchronized static void showFiles(Path localPath, int peiodOfTime){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Files.isDirectory(localPath)) {
+                try (Stream<Path> paths = Files.list(localPath)) {
+                    paths.forEach(path -> {
+                        if (Files.isRegularFile(path)) {
+                            switch (peiodOfTime){
+                                case 1:
+                                    LogUtil.writeLogToExternalStorage("Found file before uploading to server: " + path.toString());
+                                break;
+                                case 2:
+                                    LogUtil.writeLogToExternalStorage("Found file after uploading to server(before deleting the directory with files in phone): " + path.toString());
+                                case 3:
+                                    LogUtil.writeLogToExternalStorage("Found file after deleting the directory with files): " + path.toString());
+                                break;
+                            }
+                        }
+                    });
+                } catch (IOException e) {
+                    LogUtil.writeLogToExternalStorage("Error listing files in directory: " + localPath.toString() + ", " + e.getMessage());
+                }
+            } else {
+                LogUtil.writeLogToExternalStorage(localPath.toString() + " is not a directory.");
+            }
+        }
+    }
     public static boolean validateCoordinates(Rect coordinates) {
         return coordinates != null && coordinates.width > 0 && coordinates.height > 0;
     }
