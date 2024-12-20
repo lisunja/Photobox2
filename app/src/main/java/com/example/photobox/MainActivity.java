@@ -2,17 +2,11 @@ package com.example.photobox;
 
 
 import android.Manifest;
-import android.annotation.SuppressLint;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
@@ -49,13 +43,10 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 
 import com.example.photobox.log.LogUtil;
-
 import com.example.photobox.service.FileUploadService;
 import com.example.photobox.utils.Photo;
-import com.example.photobox.utils.SMBUtils;
 import com.example.photobox.utils.Validation;
 import com.example.photobox.view.SettingActivity;
-
 import com.example.photobox.view.TrashActivity;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.journeyapps.barcodescanner.ScanContract;
@@ -72,11 +63,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-import android.graphics.ColorMatrix;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -307,8 +294,8 @@ public class MainActivity extends AppCompatActivity {
                     LogUtil.writeLogToExternalStorage("Checkbutton clicked");
                     createDirectory(MainActivity.this, sampleNr);
                     //                    Thread thread = new Thread(() -> {
-                    Bitmap rotatedBitmap = getRotatedBitmap();
-                    File imageFile = saveBitmapToDirectory(MainActivity.this,/* blackWhitePhoto*/ rotatedBitmap, sampleNr);
+//                    Bitmap rotatedBitmap = getRotatedBitmap();
+                    File imageFile = saveBitmapToDirectory(MainActivity.this,/* blackWhitePhoto*/ originalPhoto, sampleNr);
                     photoAction.setSampleNr(sampleNr);
 //                    LogUtil.writeLogToExternalStorage("sample number:" + sampleNr);
                     photoAction.saveCropCoordinates(imageFile.getAbsolutePath(), MainActivity.this);

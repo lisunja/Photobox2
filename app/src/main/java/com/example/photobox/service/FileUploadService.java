@@ -43,7 +43,7 @@ public class FileUploadService extends Service {
 
     private static final String CHANNEL_ID = "FileUploadServiceChannel";
     private Handler handler;
-//    private Handler directoryHandler;
+    //    private Handler directoryHandler;
 //    private Runnable directoryPeriodicTask;
     //for action in new thread
     private Runnable periodicTask;
@@ -72,7 +72,8 @@ public class FileUploadService extends Service {
             @Override
             public void run() {
                 try {
-                    uploadFile();
+                    String localFilePath = getFilesDir().getPath();
+                    uploadFile(localFilePath);
                 }catch (Exception e){
                     Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
@@ -149,16 +150,18 @@ public class FileUploadService extends Service {
                 .build();
     }
     //upload files into server
-    private void uploadFile() {
+    public void uploadFile(String localFilePath/*, String photoName*/) {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(() -> {
             try {
-                String localFilePath = getFilesDir().getPath();
+                Log.d(TAG, "localFilePath: " + localFilePath);
+//                String localFilePath = getFilesDir().getPath();
                 SecureStorage secureStorage = new SecureStorage(context);
                 String remotePath = secureStorage.getRemotePath();
                 SMBUtils smbUtils = new SMBUtils(context);
                 if (smbUtils.checkConnection(context)) {
-                        smbUtils.uploadAllFilesInDirectory(context,localFilePath, remotePath);
+                    Log.d(TAG, "uploadFile methode called");
+                    smbUtils.uploadAllFilesInDirectory(context,localFilePath, remotePath/*, photoName*/);
                 } else {
                     LogUtil.writeLogToExternalStorage("No connection to the server");
                     throw new Exception("No connection to the server");
